@@ -5,7 +5,7 @@
     <version>1.0.0</version>
     <authors>Shared</authors>
     <description>Package Description</description>
-    <repository type="git" commit="1b59ec3e0c1be42c3b4b2716fe84c825626d5be2" />
+    <repository type="git" commit="5878a0bafc97773e663f25ce44f89a5978d7b49e" />
     <dependencies>
       <group targetFramework="net8.0">
         <dependency id="MudBlazor" version="9.2.0" exclude="Build,Analyzers" />
