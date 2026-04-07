@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Blazor-Hybrid/Blazor-Hybrid.csproj" />
+  <Project Path="Shared/Shared.csproj" Id="e26446a5-6424-4fa0-aa9f-ea2d90006c3c" />
+</Solution>

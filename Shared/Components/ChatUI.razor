@@ -1,0 +1,251 @@
+@using Microsoft.JSInterop
+@using Shared.Interfaces
+@using Shared.Services
+@inject IChatUIService NavService
+
+<MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="true">
+        <MudText Typo="Typo.h6">PROMA Q&amp;A</MudText>
+        <MudSpacer />
+        @if(NavService.AllowMultipleThemes)
+        {
+            <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit"
+                           OnClick="() => _isDarkMode = !_isDarkMode" />
+
+        }
+        <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
+                       Color="Color.Inherit"
+                       OnClick="ClearChat" />
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Size="Size.Medium" Color="Color.Default" OnClick="NavService.RequestClose" />
+    </MudAppBar>
+
+    <MudMainContent>
+        <div class="chat-container d-flex flex-column" style="height: calc(100vh - 48px);">
+
+            @* Message area *@
+            <div @ref="_scrollContainer" class="flex-grow-1 overflow-auto pa-4" id="message-area">
+                @if (_messages.Count == 0)
+                {
+                    <div class="d-flex justify-center align-center" style="height: 100%;">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            
+                            <MudIcon Icon="@Icons.Material.Filled.Chat" Size="Size.Large" Color="Color.Primary" />
+                            <MudText Typo="Typo.h5" Color="Color.Primary">How can I help you today?</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Send a message to start a conversation.</MudText>
+                        </MudStack>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var msg in _messages)
+                    {
+                        <div class="d-flex mb-4 @(msg.IsUser ? "justify-end" : "justify-start")">
+                            @if (!msg.IsUser)
+                            {
+                                <MudAvatar Color="Color.Primary" Size="Size.Small" Class="mr-2 mt-1">
+                                    <MudIcon Icon="@Icons.Material.Filled.SmartToy" Size="Size.Small" />
+                                </MudAvatar>
+                            }
+                            <MudPaper Class=@($"pa-3 {(msg.IsUser ? "user - bubble" : "assistant - bubble")}")
+                                       Elevation="1"
+                                       Style="@($"max-width: 75%; border-radius: 12px; {(msg.IsUser ? "background-color: var(--mud-palette-primary); color: white;" : "")}")">
+                                <MudText Typo="Typo.body1" Style="white-space: pre-wrap; word-break: break-word;">
+                                    @msg.Content
+                                </MudText>
+                                <MudText Typo="Typo.caption"
+                                         Style="@($"opacity: 0.7; {(msg.IsUser ? "color: white;" : "")}")"
+                                         Class="mt-1">
+                                    @msg.Timestamp.ToString("h:mm tt")
+                                </MudText>
+                            </MudPaper>
+                            @if (msg.IsUser)
+                            {
+                                <MudAvatar Color="Color.Secondary" Size="Size.Small" Class="ml-2 mt-1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                                </MudAvatar>
+                            }
+                        </div>
+                    }
+
+                    @if (_isTyping)
+                    {
+                        <div class="d-flex mb-4 justify-start">
+                            <MudAvatar Color="Color.Primary" Size="Size.Small" Class="mr-2 mt-1">
+                                <MudIcon Icon="@Icons.Material.Filled.SmartToy" Size="Size.Small" />
+                            </MudAvatar>
+                            <MudPaper Class="pa-3" Elevation="1" Style="border-radius: 12px;">
+                                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Style="width: 60px;" />
+                            </MudPaper>
+                        </div>
+                    }
+                }
+            </div>
+
+            @* Input area *@
+            <MudPaper Class="pa-2" Elevation="3">
+                <div class="d-flex align-center gap-2">
+                    <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                   Color="Color.Default"
+                                   Size="Size.Medium" />
+
+                    @if (NavService.IsVoiceInputStarted)
+                    {
+                        <div class="d-flex align-center flex-grow-1 gap-2 pa-2"
+                             style="border: 1px solid var(--mud-palette-lines-default); border-radius: 28px; height: 48px; overflow: hidden;">
+                            <MudIcon Icon="@Icons.Material.Filled.FiberManualRecord"
+                                     Color="Color.Error" Size="Size.Small"
+                                     Class="recording-pulse" />
+                            <canvas id="waveform-canvas" style="flex: 1; height: 32px;"></canvas>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudTextField @ref="_inputField"
+                                      T="string"
+                                      Value="_userInput"
+                                      ValueChanged="OnInputChanged"
+                                      Placeholder="Type a message..."
+                                      Variant="Variant.Outlined"
+                                      Lines="1"
+                                      Immediate="true"
+                                      OnKeyDown="HandleKeyDown"
+                                      Disabled="_isTyping"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@Icons.Material.Filled.Mic"
+                                      OnAdornmentClick="StartVoiceInputAsync"
+                                      AdornmentColor="@(_isTyping == false ? Color.Info : Color.Default)"
+                                      Margin="Margin.Dense"
+                                      Class="rounded-pill flex-grow-1" />
+                    }
+
+                    @if (NavService.IsVoiceInputStarted)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                       Color="Color.Error"
+                                       Size="Size.Medium"
+                                       OnClick="StartVoiceInputAsync" />
+                    }
+
+                    <MudFab StartIcon="@(!NavService.IsVoiceInputStarted ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.Check)"
+                            Color="@(_isTyping == false ? Color.Info : Color.Default)"
+                            Size="Size.Small"
+                            OnClick="SendMessage"
+                            Disabled="@(!NavService.IsVoiceInputStarted && (string.IsNullOrWhiteSpace(_userInput) || _isTyping))" />
+                </div>
+            </MudPaper>
+        </div>
+    </MudMainContent>
+</MudLayout>
+
+<script>
+    window.scrollToBottom = function(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.scrollTop = element.scrollHeight;
+        }
+    };
+
+    window.audioVisualizer = {
+        audioContext: null,
+        analyser: null,
+        stream: null,
+        animationId: null,
+
+        start: async function () {
+            try {
+                this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.audioContext = new AudioContext();
+                this.analyser = this.audioContext.createAnalyser();
+                this.analyser.fftSize = 256;
+
+                const source = this.audioContext.createMediaStreamSource(this.stream);
+                source.connect(this.analyser);
+
+                this.draw();
+            } catch (e) {
+                console.error('Microphone access denied:', e);
+            }
+        },
+
+        draw: function () {
+            const canvas = document.getElementById('waveform-canvas');
+            if (!canvas || !this.analyser) return;
+
+            const ctx = canvas.getContext('2d');
+            const bufferLength = this.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const render = () => {
+                this.animationId = requestAnimationFrame(render);
+                this.analyser.getByteTimeDomainData(dataArray);
+
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw waveform
+                ctx.lineWidth = 2;
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop(0, '#1976d2');
+                gradient.addColorStop(0.5, '#42a5f5');
+                gradient.addColorStop(1, '#1976d2');
+                ctx.strokeStyle = gradient;
+                ctx.beginPath();
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = (v * canvas.height) / 2;
+
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+
+                    x += sliceWidth;
+                }
+
+                ctx.lineTo(canvas.width, canvas.height / 2);
+                ctx.stroke();
+            };
+
+            render();
+        },
+
+        stop: function () {
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
+                this.animationId = null;
+            }
+            if (this.stream) {
+                this.stream.getTracks().forEach(t => t.stop());
+                this.stream = null;
+            }
+            if (this.audioContext) {
+                this.audioContext.close();
+                this.audioContext = null;
+            }
+        }
+    };
+</script>
+
+<style>
+    @@keyframes pulse-recording {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    .recording-pulse {
+        animation: pulse-recording 1s ease-in-out infinite;
+    }
+</style>
+
+@code {
+    
+}

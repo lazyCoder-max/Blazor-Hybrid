@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Shared</id>
+    <version>1.0.0</version>
+    <authors>Shared</authors>
+    <description>Package Description</description>
+    <repository type="git" commit="1b59ec3e0c1be42c3b4b2716fe84c825626d5be2" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="MudBlazor" version="9.2.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <contentFiles>
+      <files include="any/net8.0/Properties/launchSettings.json" buildAction="Content" />
+    </contentFiles>
+  </metadata>
+  <files>
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\bin\Debug\net8.0\Shared.dll" target="lib\net8.0\Shared.dll" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\Properties\launchSettings.json" target="content\Properties\launchSettings.json" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\Properties\launchSettings.json" target="contentFiles\any\net8.0\Properties\launchSettings.json" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\bootstrap\bootstrap.min.css" target="staticwebassets\css\bootstrap\bootstrap.min.css" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\bootstrap\bootstrap.min.css.map" target="staticwebassets\css\bootstrap\bootstrap.min.css.map" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\FONT-LICENSE" target="staticwebassets\css\open-iconic\FONT-LICENSE" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\ICON-LICENSE" target="staticwebassets\css\open-iconic\ICON-LICENSE" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\README.md" target="staticwebassets\css\open-iconic\README.md" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\font\css\open-iconic-bootstrap.min.css" target="staticwebassets\css\open-iconic\font\css\open-iconic-bootstrap.min.css" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\font\fonts\open-iconic.eot" target="staticwebassets\css\open-iconic\font\fonts\open-iconic.eot" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\font\fonts\open-iconic.otf" target="staticwebassets\css\open-iconic\font\fonts\open-iconic.otf" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\font\fonts\open-iconic.svg" target="staticwebassets\css\open-iconic\font\fonts\open-iconic.svg" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\font\fonts\open-iconic.ttf" target="staticwebassets\css\open-iconic\font\fonts\open-iconic.ttf" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\open-iconic\font\fonts\open-iconic.woff" target="staticwebassets\css\open-iconic\font\fonts\open-iconic.woff" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\css\site.css" target="staticwebassets\css\site.css" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\wwwroot\favicon.ico" target="staticwebassets\favicon.ico" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\obj\Debug\net8.0\staticwebassets\msbuild.Shared.Microsoft.AspNetCore.StaticWebAssetEndpoints.props" target="build\Microsoft.AspNetCore.StaticWebAssetEndpoints.props" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\obj\Debug\net8.0\staticwebassets\msbuild.Shared.Microsoft.AspNetCore.StaticWebAssets.props" target="build\Microsoft.AspNetCore.StaticWebAssets.props" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\obj\Debug\net8.0\staticwebassets\msbuild.build.Shared.props" target="build\Shared.props" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.Shared.props" target="buildMultiTargeting\Shared.props" />
+    <file src="C:\Users\kidus\source\repos\Blazor-Hybrid\Shared\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.Shared.props" target="buildTransitive\Shared.props" />
+  </files>
+</package>

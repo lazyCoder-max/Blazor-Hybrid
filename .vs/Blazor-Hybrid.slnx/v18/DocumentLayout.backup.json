@@ -1,0 +1,92 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|c:\\users\\externdev11\\source\\repos\\blazor-hybrid\\shared\\components\\chatui.razor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|solutionrelative:shared\\components\\chatui.razor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|c:\\users\\externdev11\\source\\repos\\blazor-hybrid\\shared\\components\\chatui.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|solutionrelative:shared\\components\\chatui.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|c:\\users\\externdev11\\source\\repos\\blazor-hybrid\\shared\\services\\chatuiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|solutionrelative:shared\\services\\chatuiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|c:\\users\\externdev11\\source\\repos\\blazor-hybrid\\shared\\interfaces\\ichatuiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E26446A5-6424-4FA0-AA9F-EA2D90006C3C}|Shared\\Shared.csproj|solutionrelative:shared\\interfaces\\ichatuiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ChatUIService.cs",
+              "DocumentMoniker": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Services\\ChatUIService.cs",
+              "RelativeDocumentMoniker": "Shared\\Services\\ChatUIService.cs",
+              "ToolTip": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Services\\ChatUIService.cs",
+              "RelativeToolTip": "Shared\\Services\\ChatUIService.cs",
+              "ViewState": "AgIAABkAAADgmJmZmdkpwC8AAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-07T15:25:53.914Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "IChatUIService.cs",
+              "DocumentMoniker": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Interfaces\\IChatUIService.cs",
+              "RelativeDocumentMoniker": "Shared\\Interfaces\\IChatUIService.cs",
+              "ToolTip": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Interfaces\\IChatUIService.cs",
+              "RelativeToolTip": "Shared\\Interfaces\\IChatUIService.cs",
+              "ViewState": "AgIAACkAAABAmZmZmRkuwEMAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-07T15:21:16.084Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ChatUI.razor.cs",
+              "DocumentMoniker": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Components\\ChatUI.razor.cs",
+              "RelativeDocumentMoniker": "Shared\\Components\\ChatUI.razor.cs",
+              "ToolTip": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Components\\ChatUI.razor.cs",
+              "RelativeToolTip": "Shared\\Components\\ChatUI.razor.cs",
+              "ViewState": "AgIAADAAAAAAAAAAAADwv0UAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-07T15:20:32.842Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ChatUI.razor",
+              "DocumentMoniker": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Components\\ChatUI.razor",
+              "RelativeDocumentMoniker": "Shared\\Components\\ChatUI.razor",
+              "ToolTip": "C:\\Users\\externdev11\\source\\repos\\Blazor-Hybrid\\Shared\\Components\\ChatUI.razor*",
+              "RelativeToolTip": "Shared\\Components\\ChatUI.razor*",
+              "ViewState": "AgIAAJIAAAAAAAAAAADwv40AAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-07T15:20:07.304Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
