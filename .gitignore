@@ -424,3 +424,9 @@ FodyWeavers.xsd
 /Shared/obj/Debug/net8.0/rpswa.dswa.cache.json
 /Shared/obj/Debug/net8.0/Shared.AssemblyInfo.cs
 /Shared/obj/Debug/net8.0/Shared.AssemblyInfoInputs.cache
+/.vs/Blazor-Hybrid.slnx/v17/.suo
+/Blazor-Hybrid/bin/Debug/net8.0-windows/Blazor-Hybrid.dll
+/Blazor-Hybrid/bin/Debug/net8.0-windows/Blazor-Hybrid.exe
+/Blazor-Hybrid/bin/Debug/net8.0-windows/Blazor-Hybrid.pdb
+/Blazor-Hybrid/bin/Debug/net8.0-windows/Shared.dll
+/Blazor-Hybrid/bin/Debug/net8.0-windows/Shared.pdb
