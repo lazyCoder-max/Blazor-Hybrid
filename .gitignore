@@ -416,3 +416,11 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+/.vs/Blazor-Hybrid/CopilotIndices/17.14.1204.46620/CodeChunks.db-shm
+/.vs/Blazor-Hybrid/CopilotIndices/17.14.1204.46620/SemanticSymbols.db-shm
+/Blazor-Hybrid/obj/Debug/net8.0-windows/Blazor-Hybrid.AssemblyInfo.cs
+/Blazor-Hybrid/obj/Debug/net8.0-windows/Blazor-Hybrid.AssemblyInfoInputs.cache
+/Blazor-Hybrid/obj/Debug/net8.0-windows/rpswa.dswa.cache.json
+/Shared/obj/Debug/net8.0/rpswa.dswa.cache.json
+/Shared/obj/Debug/net8.0/Shared.AssemblyInfo.cs
+/Shared/obj/Debug/net8.0/Shared.AssemblyInfoInputs.cache
