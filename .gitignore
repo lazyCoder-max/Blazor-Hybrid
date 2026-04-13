@@ -404,3 +404,13 @@ FodyWeavers.xsd
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio
 /BlazorStargazerModal/nuget.config
+/Blazor-Hybrid/obj/Debug/net8.0-windows/ref/Blazor-Hybrid.dll
+/Blazor-Hybrid/obj/Debug/net8.0-windows/refint/Blazor-Hybrid.dll
+/Blazor-Hybrid/obj/Debug/net8.0-windows/apphost.exe
+/Blazor-Hybrid/obj/Debug/net8.0-windows/Blazor-Hybrid.csproj.AssemblyReference.cache
+/Blazor-Hybrid/obj/Debug/net8.0-windows/Blazor-Hybrid.dll
+/Blazor-Hybrid/obj/Debug/net8.0-windows/Blazor-Hybrid.pdb
+/Blazor-Hybrid/obj/Debug/net8.0-windows/Blazor-Hybrid.sourcelink.json
+/Blazor-Hybrid/obj/Debug/net8.0-windows/rjsmcshtml.dswa.cache.json
+/Blazor-Hybrid/obj/Debug/net8.0-windows/rjsmrazor.dswa.cache.json
+/Blazor-Hybrid/obj/Debug/net8.0-windows/staticwebassets.references.upToDateCheck.txt
