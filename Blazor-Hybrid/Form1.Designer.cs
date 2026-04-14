@@ -34,12 +34,13 @@
             textBox1 = new TextBox();
             blazorWebView1 = new Microsoft.AspNetCore.Components.WebView.WindowsForms.BlazorWebView();
             checkBox1 = new CheckBox();
+            button2 = new Button();
             SuspendLayout();
             // 
             // button1
             // 
             button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            button1.Location = new Point(12, 404);
+            button1.Location = new Point(12, 554);
             button1.Name = "button1";
             button1.Size = new Size(163, 34);
             button1.TabIndex = 1;
@@ -50,9 +51,9 @@
             // textBox1
             // 
             textBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            textBox1.Location = new Point(198, 407);
+            textBox1.Location = new Point(198, 557);
             textBox1.Name = "textBox1";
-            textBox1.Size = new Size(404, 31);
+            textBox1.Size = new Size(281, 31);
             textBox1.TabIndex = 2;
             // 
             // blazorWebView1
@@ -60,7 +61,7 @@
             blazorWebView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             blazorWebView1.Location = new Point(-790, 12);
             blazorWebView1.Name = "blazorWebView1";
-            blazorWebView1.Size = new Size(776, 386);
+            blazorWebView1.Size = new Size(776, 536);
             blazorWebView1.StartPath = "/";
             blazorWebView1.TabIndex = 0;
             blazorWebView1.Text = "blazorWebView1";
@@ -69,7 +70,7 @@
             // 
             checkBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(640, 409);
+            checkBox1.Location = new Point(497, 559);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(148, 29);
             checkBox1.TabIndex = 3;
@@ -77,11 +78,23 @@
             checkBox1.UseVisualStyleBackColor = true;
             checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
+            // button2
+            // 
+            button2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            button2.Location = new Point(651, 555);
+            button2.Name = "button2";
+            button2.Size = new Size(137, 34);
+            button2.TabIndex = 4;
+            button2.Text = "Enable RPC";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(800, 600);
+            Controls.Add(button2);
             Controls.Add(checkBox1);
             Controls.Add(blazorWebView1);
             Controls.Add(textBox1);
@@ -101,5 +114,6 @@
         private TextBox textBox1;
         private Microsoft.AspNetCore.Components.WebView.WindowsForms.BlazorWebView blazorWebView1;
         private CheckBox checkBox1;
+        private Button button2;
     }
 }

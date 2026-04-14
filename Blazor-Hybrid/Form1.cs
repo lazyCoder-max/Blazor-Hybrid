@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Components.WebView.WindowsForms;
 using Microsoft.Extensions.DependencyInjection;
+using PromaAITextSrv.Helpers;
+using PromaAITextSrv.Interfaces;
+using PromaAITextSrv.Models.Endpoints.Chat;
 using Shared.Components;
 using Shared.Interfaces;
 
@@ -12,6 +15,7 @@ namespace Blazor_Hybrid
         private bool _disposed = false;
         private bool _isInitialized;
         private IChatUIService _chatUIService;
+        private Shared.Interfaces.IMessageBrokerService _messageBrokerService;
         public Form1()
         {
             InitializeComponent();
@@ -19,7 +23,8 @@ namespace Blazor_Hybrid
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            _serviceProvider = Program.Services.BuildServiceProvider();
+            _messageBrokerService = _serviceProvider.GetRequiredService<Shared.Interfaces.IMessageBrokerService>();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -93,12 +98,25 @@ namespace Blazor_Hybrid
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            checkBox1.Text =  checkBox1.Checked ? "Disable Theme" : "Enable Theme";
+            checkBox1.Text = checkBox1.Checked ? "Disable Theme" : "Enable Theme";
             if (checkBox1.Checked)
                 _chatUIService.AllowMultipleThemes = true;
             else
                 _chatUIService.AllowMultipleThemes = false;
 
+        }
+
+        private async void button2_Click(object sender, EventArgs e)
+        {
+            var response = await _messageBrokerService.CallRpcAsync<ChatRequest, ChatResponse>(
+                                Shared.Helpers.RequestType.TextCorrection,
+                        new ChatRequest
+                        {
+                             message = "Helo, worrld!",
+                             mode = "text_correction",
+                             language = "en",
+                             use_rag = false
+                        });
         }
     }
 }

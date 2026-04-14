@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using MudBlazor.Services;
 using Shared;
 
@@ -16,10 +17,18 @@ namespace Blazor_Hybrid
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+            
+            // Build configuration
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("Config\\appsettings.Development.json", optional: true, reloadOnChange: true)
+                .Build();
+            
             Services = new ServiceCollection();
             Services.AddWindowsFormsBlazorWebView();
             Services.AddMudServices();
-            Services.AddPromanAISharedServices();
+            Services.AddPromanAISharedServices(configuration);
+
             Application.Run(new Form1());
         }
     }
