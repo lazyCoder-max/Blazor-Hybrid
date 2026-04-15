@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using MudBlazor.Services;
 using Shared;
+using MudBlazor;
 
 namespace Blazor_Hybrid
 {
@@ -27,6 +28,7 @@ namespace Blazor_Hybrid
             Services = new ServiceCollection();
             Services.AddWindowsFormsBlazorWebView();
             Services.AddMudServices();
+            Services.AddMudMarkdownServices();
             Services.AddPromanAISharedServices(configuration);
 
             Application.Run(new Form1());

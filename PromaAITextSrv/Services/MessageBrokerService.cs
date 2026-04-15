@@ -81,7 +81,6 @@ namespace PromaAITextSrv.Services
                 await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
                 await channel.QueueBindAsync(queueName, exchangeName, routingKey, arguments: null);
 
-                // Good for worker-style RPC servers
                 await channel.BasicQosAsync(0, 100, false);
 
                 var consumer = new AsyncEventingBasicConsumer(channel);
@@ -101,7 +100,6 @@ namespace PromaAITextSrv.Services
 
         /// <summary>
         /// Creates one exclusive reply queue per client instance and starts a consumer on it.
-        /// RabbitMQ recommends one callback queue per client and matching replies by CorrelationId.
         /// </summary>
         private async Task EnsureReplyConsumerAsync()
         {

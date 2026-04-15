@@ -11,6 +11,7 @@ internal sealed class ChatUIService : IChatUIService
     public event Action? OnCloseRequested;
     public event Action<string?> InputFieldChanged = default!;
     public event Action<ChatMessage>? SendMessageRequested;
+    public event Action<ChatResponse>? ChatResponseReceived;
     public event Action? StateChangeRequested;
 
     bool IChatUIService.AllowMultipleThemes 
@@ -37,7 +38,10 @@ internal sealed class ChatUIService : IChatUIService
     {
         SendMessageRequested?.Invoke(message);
     }
-
+    void IChatUIService.OnChatResponseReceived(ChatResponse response)
+    {
+        ChatResponseReceived?.Invoke(response);
+    }
     void IChatUIService.RequestClose()
     {
         OnCloseRequested?.Invoke();

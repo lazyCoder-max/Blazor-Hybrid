@@ -5,6 +5,13 @@ namespace Shared.Interfaces
     public interface IChatUIService
     {
         /// <summary>
+        /// Occurs when a new chat response is received.
+        /// </summary>
+        /// <remarks>Subscribers are notified each time a chat response is available. Handlers receive the
+        /// response as a parameter. This event may be raised on a background thread; ensure thread safety when
+        /// accessing shared resources.</remarks>
+        public event Action<ChatResponse>? ChatResponseReceived;
+        /// <summary>
         /// Occurs when a request is made to close the associated resource or component.
         /// </summary>
         /// <remarks>Subscribers can use this event to perform cleanup or prompt the user before closing. The
@@ -45,8 +52,13 @@ namespace Shared.Interfaces
         bool IsVoiceInputStarted { get; }
 
 
-        #region Methods
 
+        #region Methods
+        /// <summary>
+        /// a method that is called when a chat response is received, allowing the implementing class to handle the response appropriately.
+        /// </summary>
+        /// <param name="response"></param>
+        void OnChatResponseReceived(ChatResponse response);
         /// <summary>
         /// Requests that the associated view be closed.
         /// </summary>

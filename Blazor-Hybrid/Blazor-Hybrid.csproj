@@ -12,6 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="8.0.100" />
     <PackageReference Include="MudBlazor" Version="9.2.0" />
+	  <PackageReference Include="MudBlazor.Markdown" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>

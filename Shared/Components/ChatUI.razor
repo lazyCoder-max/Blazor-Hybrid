@@ -1,7 +1,7 @@
 @using Microsoft.JSInterop
 @using Shared.Interfaces
 @using Shared.Services
-@inject IChatUIService NavService
+@inject IChatUIService ChatUIService
 
 <MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -12,7 +12,7 @@
     <MudAppBar Elevation="1" Dense="true">
         <MudText Typo="Typo.h6">PROMA Q&amp;A</MudText>
         <MudSpacer />
-        @if(NavService.AllowMultipleThemes)
+        @if(ChatUIService.AllowMultipleThemes)
         {
             <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                            Color="Color.Inherit"
@@ -22,7 +22,7 @@
         <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
                        Color="Color.Inherit"
                        OnClick="ClearChat" />
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Size="Size.Medium" Color="Color.Default" OnClick="NavService.RequestClose" />
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Size="Size.Medium" Color="Color.Default" OnClick="ChatUIService.RequestClose" />
     </MudAppBar>
 
     <MudMainContent>
@@ -55,9 +55,7 @@
                             <MudPaper Class=@($"pa-3 {(msg.IsUser ? "user - bubble" : "assistant - bubble")}")
                                        Elevation="1"
                                        Style="@($"max-width: 75%; border-radius: 12px; {(msg.IsUser ? "background-color: var(--mud-palette-primary); color: white;" : "")}")">
-                                <MudText Typo="Typo.body1" Style="white-space: pre-wrap; word-break: break-word;">
-                                    @msg.Content
-                                </MudText>
+                                       <MudMarkdown Value="@msg.Content"/>
                                 <MudText Typo="Typo.caption"
                                          Style="@($"opacity: 0.7; {(msg.IsUser ? "color: white;" : "")}")"
                                          Class="mt-1">
@@ -94,7 +92,7 @@
                                    Color="Color.Default"
                                    Size="Size.Medium" />
 
-                    @if (NavService.IsVoiceInputStarted)
+                    @if (ChatUIService.IsVoiceInputStarted)
                     {
                         <div class="d-flex align-center flex-grow-1 gap-2 pa-2"
                              style="border: 1px solid var(--mud-palette-lines-default); border-radius: 28px; height: 48px; overflow: hidden;">
@@ -124,7 +122,7 @@
                                       Class="rounded-pill flex-grow-1" />
                     }
 
-                    @if (NavService.IsVoiceInputStarted)
+                    @if (ChatUIService.IsVoiceInputStarted)
                     {
                         <MudIconButton Icon="@Icons.Material.Filled.Close"
                                        Color="Color.Error"
@@ -132,11 +130,11 @@
                                        OnClick="StartVoiceInputAsync" />
                     }
 
-                    <MudFab StartIcon="@(!NavService.IsVoiceInputStarted ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.Check)"
+                    <MudFab StartIcon="@(!ChatUIService.IsVoiceInputStarted ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.Check)"
                             Color="@(_isTyping == false ? Color.Info : Color.Default)"
                             Size="Size.Small"
                             OnClick="SendMessage"
-                            Disabled="@(!NavService.IsVoiceInputStarted && (string.IsNullOrWhiteSpace(_userInput) || _isTyping))" />
+                            Disabled="@(!ChatUIService.IsVoiceInputStarted && (string.IsNullOrWhiteSpace(_userInput) || _isTyping))" />
                 </div>
             </MudPaper>
         </div>

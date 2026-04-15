@@ -1,6 +1,10 @@
 using PromaAITextSrv;
+using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddSerilog(config => config
+    .ReadFrom.Configuration(builder.Configuration));
 
 builder.Services.AddPromanAITextService(builder.Configuration);
 

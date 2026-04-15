@@ -4,17 +4,20 @@ using Microsoft.JSInterop;
 using MudBlazor;
 using Shared.Interfaces;
 using Shared.Models;
+using Shared.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static MudBlazor.CategoryTypes;
 
 namespace Shared.Components
 {
     public partial class ChatUI
     {
         [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+        [Inject] private Shared.Interfaces.IMessageBrokerService _messageBrokerService { get; set; } = default!;
 
         private readonly List<ChatMessage> _messages = [];
         private string? _userInput;
@@ -38,10 +41,32 @@ namespace Shared.Components
         };
         protected override void OnInitialized()
         {
-            NavService.StateChangeRequested += NavService_StateChangeRequested;
+            ChatUIService.StateChangeRequested += ChatUIService_StateChangeRequested;
+            ChatUIService.ChatResponseReceived += ChatUIService_ChatResponseReceived;
         }
 
-        private void NavService_StateChangeRequested()
+        private async void ChatUIService_ChatResponseReceived(ChatResponse obj)
+        {
+            obj.response.corrected_text = $"**[Corrected Text]**:  <br>{obj.response.corrected_text}";
+            var assistantMessage = new ChatMessage(false, DateTime.Now) { Content = string.Empty };
+            for (var i = 0; i < obj.response.corrected_text.Length; i++)
+            {
+                assistantMessage.Content += obj.response.corrected_text[i];
+                StateHasChanged();
+                await Task.Delay(20);
+
+                if (i % 15 == 0)
+                {
+                    await ScrollToBottom();
+                }
+            }
+            _messages.Add(assistantMessage);
+            _isTyping = false;
+            StateHasChanged();
+            await ScrollToBottom();
+        }
+
+        private void ChatUIService_StateChangeRequested()
         {
             InvokeAsync(StateHasChanged);
         }
@@ -49,7 +74,7 @@ namespace Shared.Components
         private void OnInputChanged(string? value)
         {
             _userInput = value;
-            NavService.OnInputFieldChanged(value);
+            ChatUIService.OnInputFieldChanged(value);
         }
         private async Task HandleKeyDown(KeyboardEventArgs e)
         {
@@ -60,13 +85,13 @@ namespace Shared.Components
         }
         private async Task StartVoiceInputAsync()
         {
-            if(NavService.IsVoiceInputStarted)
+            if(ChatUIService.IsVoiceInputStarted)
             {
-                NavService.VoiceInputStarted(false);
+                ChatUIService.VoiceInputStarted(false);
                 await JSRuntime.InvokeVoidAsync("audioVisualizer.stop");
                 return;
             }
-            NavService.VoiceInputStarted(true);
+            ChatUIService.VoiceInputStarted(true);
             StateHasChanged();
             await Task.Delay(50); // allow canvas to render in DOM
             await JSRuntime.InvokeVoidAsync("audioVisualizer.start");
@@ -81,31 +106,27 @@ namespace Shared.Components
 
             var message = new ChatMessage(true, DateTime.Now) { Content = userText };
             _messages.Add(message);
-            NavService.OnSendMessageRequested(message);
+            ChatUIService.OnSendMessageRequested(message);
             _isTyping = true;
             StateHasChanged();
             await ScrollToBottom();
 
-            var response = await GetAIResponseAsync(userText);
-
-            var assistantMessage = new ChatMessage(false, DateTime.Now) { Content = string.Empty };
-            _messages.Add(assistantMessage);
-            _isTyping = false;
-            StateHasChanged();
-
-            for (var i = 0; i < response.Length; i++)
+            var response = await _messageBrokerService.CallRpcAsync<ChatRequest, ChatResponse>(
+                                Shared.Helpers.RequestType.TextCorrection,
+                        new ChatRequest
+                        {
+                            message = userText,
+                            mode = "text_correction",
+                            language = "en",
+                            use_rag = false
+                        });
+            if (response!.response == null)
             {
-                assistantMessage.Content += response[i];
-                StateHasChanged();
-                await Task.Delay(20);
-
-                if (i % 15 == 0)
-                {
-                    await ScrollToBottom();
-                }
+                return;
             }
 
-            await ScrollToBottom();
+            ChatUIService.OnChatResponseReceived(response);
+            
         }
 
         private async Task ScrollToBottom()
@@ -119,14 +140,5 @@ namespace Shared.Components
             _messages.Clear();
         }
 
-        /// <summary>
-        /// Replace this stub with your real AI model integration.
-        /// </summary>
-        private static async Task<string> GetAIResponseAsync(string prompt)
-        {
-            // Simulate network latency
-            await Task.Delay(1000);
-            return $"This is a placeholder response to: \"{prompt}\"\n\nReplace GetAIResponseAsync() with your actual AI model call.";
-        }
     }
 }

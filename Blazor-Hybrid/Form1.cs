@@ -108,15 +108,7 @@ namespace Blazor_Hybrid
 
         private async void button2_Click(object sender, EventArgs e)
         {
-            var response = await _messageBrokerService.CallRpcAsync<ChatRequest, ChatResponse>(
-                                Shared.Helpers.RequestType.TextCorrection,
-                        new ChatRequest
-                        {
-                             message = "Helo, worrld!",
-                             mode = "text_correction",
-                             language = "en",
-                             use_rag = false
-                        });
+            
         }
     }
 }

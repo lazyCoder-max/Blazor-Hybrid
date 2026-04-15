@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MudBlazor;
+using Serilog;
 using Shared.Config;
 using Shared.Interfaces;
 using Shared.Services;
@@ -10,6 +12,8 @@ namespace Shared
     {
         public static IServiceCollection AddPromanAISharedServices(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddSerilog(config => config
+                    .ReadFrom.Configuration(configuration));
             services.AddSingleton<IChatUIService, ChatUIService>();
             var options = new MessageBrokerOptions();
             configuration.GetSection(MessageBrokerOptions.Key).Bind(options);
