@@ -1,0 +1,92 @@
+﻿@using Shared.Models
+@inject IJSRuntime JSRuntime
+
+<MudPaper @ref="canvasRef"
+          id="diagram-canvas"
+          Class="d-flex justify-center align-center" 
+          Style="height:549px; background:white; width:849px;position:relative;
+                 box-shadow:0 0 10px rgba(0,0,0,0.2);
+                 background-image:
+                 linear-gradient(#ddd 1px, transparent 1px),
+                 linear-gradient(90deg, #ddd 1px, transparent 1px);
+                 background-size:20px 20px;
+                 overflow:hidden;
+                 user-select:none;" 
+          Elevation="0">
+    
+    @foreach (var node in Nodes)
+    {
+        <div style="position:absolute; 
+                    left:@(node.X)px; 
+                    top:@(node.Y)px; 
+                    z-index:@(node == draggingNode ? 1000 : 1);
+                    will-change:transform;">
+            <div @onmousedown="@(e => OnNodeMouseDown(e, node))" 
+                 @onmousedown:stopPropagation="true"
+                 @onmousedown:preventDefault="true">
+                <DiagramNodeView Node="@node" />
+            </div>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private MudPaper? canvasRef;
+    private DiagramNode? draggingNode;
+    private double dragStartX;
+    private double dragStartY;
+    private double nodeStartX;
+    private double nodeStartY;
+    private bool shouldRender = true;
+
+    [Parameter]
+    public List<DiagramNode> Nodes { get; set; } = new()
+    {
+        new DiagramNode { Title = "Node 1", Type = "Process", X = 50, Y = 50 },
+        new DiagramNode { Title = "Node 2", Type = "Decision", X = 300, Y = 150 }
+    };
+
+    protected override bool ShouldRender() => shouldRender;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("initDiagramCanvas", "diagram-canvas", 
+                DotNetObjectReference.Create(this));
+        }
+    }
+
+    [JSInvokable]
+    public void OnCanvasMouseMove(double relativeX, double relativeY)
+    {
+        if (draggingNode != null)
+        {
+            double deltaX = relativeX - dragStartX;
+            double deltaY = relativeY - dragStartY;
+
+            draggingNode.X = nodeStartX + deltaX;
+            draggingNode.Y = nodeStartY + deltaY;
+
+            shouldRender = true;
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void OnCanvasMouseUp()
+    {
+        draggingNode = null;
+        shouldRender = true;
+        StateHasChanged();
+    }
+
+    private void OnNodeMouseDown(MouseEventArgs e, DiagramNode node)
+    {
+        draggingNode = node;
+        dragStartX = node.X;
+        dragStartY = node.Y;
+        nodeStartX = node.X;
+        nodeStartY = node.Y;
+    }
+}

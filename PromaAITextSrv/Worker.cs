@@ -113,11 +113,19 @@ namespace PromaAITextSrv
                 username = _options.username,
                 lizenz = _options.lizenz,
             };
+            try
+            {
 
-            var response = await _apiService.ChatAsync(request);
-            _logger.LogInformation("Chat response received in {Duration}ms", response.duration_ms);
+                var response = await _apiService.ChatAsync(request);
+                _logger.LogInformation("Chat response received in {Duration}ms", response.duration_ms);
 
-            return response;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing chat request"); 
+            }
+            return new();
         }
     }
 }

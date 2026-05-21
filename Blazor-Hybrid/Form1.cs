@@ -35,7 +35,7 @@ namespace Blazor_Hybrid
 
                 blazorWebView1.HostPage = "wwwroot/index.html";
                 blazorWebView1.Services = _serviceProvider;
-                blazorWebView1.RootComponents.Add<ChatUI>("#app");
+                blazorWebView1.RootComponents.Add<DiagramBoardView>("#app");
 
                 _chatUIService = _serviceProvider.GetRequiredService<IChatUIService>();
                 _chatUIService.OnCloseRequested += OnChatCloseRequested;

@@ -1,0 +1,26 @@
+﻿@using Shared.Models
+
+<MudCard Elevation="3" Style="@($"width:{Node.Width}px; cursor:move;background-color:lightgray;border-bottom-left-radius:5px;border-bottom-right-radius:5px;border-color:skyblue;border-width:2px")">
+    <MudCardHeader Style="padding:8px 12px; background:#f5f5f5; border-bottom:1px solid #ddd;">
+        <CardHeaderContent>
+            <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@Node.Title</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent Style="padding:12px;">
+        <MudList T="DiagramNode" Dense="true" Style="padding:0;">
+            <MudListItem Style="padding:4px 0;">
+                <MudText Typo="Typo.body2">Type: @Node.Type</MudText>
+            </MudListItem>
+            <MudListItem Style="padding:4px 0;">
+                <MudText Typo="Typo.body2">ID: @Node.Id.ToString().Substring(0, 8)</MudText>
+            </MudListItem>
+            <MudListItem Style="padding:4px 0;">
+                <MudText Typo="Typo.body2">Position: (@Node.X.ToString("F0"), @Node.Y.ToString("F0"))</MudText>
+            </MudListItem>
+        </MudList>
+    </MudCardContent>
+</MudCard>
+
+@code {
+
+}
