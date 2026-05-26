@@ -3,90 +3,105 @@
 
 <MudPaper @ref="canvasRef"
           id="diagram-canvas"
+          @onclick="DeselectAllNodes"
           Class="d-flex justify-center align-center" 
-          Style="height:549px; background:white; width:849px;position:relative;
-                 box-shadow:0 0 10px rgba(0,0,0,0.2);
-                 background-image:
-                 linear-gradient(#ddd 1px, transparent 1px),
-                 linear-gradient(90deg, #ddd 1px, transparent 1px);
-                 background-size:20px 20px;
-                 overflow:hidden;
-                 user-select:none;" 
+          Style="@($"height:{canvasHeight}px; width:{canvasWidth}px;min-height:549px;min-width:849px;background:white;position:relative;box-shadow:0 0 10px rgba(0,0,0,0.2);background-image:linear-gradient(#ddd 1px, transparent 1px),linear-gradient(90deg, #ddd 1px, transparent 1px);background-size:20px 20px;overflow:hidden;user-select:none;")" 
           Elevation="0">
     
+    @* SVG Layer for connections - MUST be absolute positioned *@
+    <svg style="position:absolute;top:0;left:0;width:@(canvasWidth)px;height:@(canvasHeight)px;pointer-events:none;z-index:500;">
+        <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="10" 
+                    refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="#2196F3" />
+            </marker>
+        </defs>
+        
+        @foreach (var connection in connections)
+        {
+            var fromNode = Nodes.FirstOrDefault(n => n.Id == connection.FromNodeId);
+            var toNode = Nodes.FirstOrDefault(n => n.Id == connection.ToNodeId);
+            
+            if (fromNode != null && toNode != null)
+            {
+
+                // TODO determine connection points based on node positions (e.g., connect from right edge of fromNode to left edge of toNode)
+                var startX = fromNode.X + fromNode.Width;
+                var startY = fromNode.Y + fromNode.Height / 2;
+                var endX = toNode.X + toNode.Width / 2;
+                var endY = toNode.Y + toNode.Height / 2;
+                
+                var midX = (startX + endX) / 2;
+                var midY = (startY + endY) / 2;
+                
+                var labelText = $"{connection.FromCode} → {connection.ToCode}";
+                var labelWidth = labelText.Length * 8 + 10; // Approximate width
+
+                @* Connection group *@
+                <g>
+                    @* Dotted line with arrow *@
+                    <line x1="@startX" y1="@startY" x2="@endX" y2="@endY" 
+                          stroke="#2196F3" 
+                          stroke-width="2" 
+                          stroke-dasharray="5,5" 
+                          marker-end="url(#arrowhead)" />
+                    
+                    @* Label background (white box with border) *@
+                    <rect x="@(midX - labelWidth/2)" y="@(midY - 12)" 
+                          width="@labelWidth" height="24" 
+                          fill="white" 
+                          stroke="#2196F3" 
+                          stroke-width="1.5" 
+                          rx="4" 
+                          ry="4" />
+                    
+                    @* Connection label text *@
+                    <text x="@midX" 
+                          y="@(midY + 5)" 
+                          text-anchor="middle" 
+                          dominant-baseline="middle"
+                          font-family="Arial, sans-serif"
+                          font-size="13"
+                          font-weight="700"
+                          fill="#2196F3"
+                          style="pointer-events:none;">
+                        @labelText
+                    </text>
+                </g>
+            }
+        }
+    </svg>
+
+    @* Node Layer *@
     @foreach (var node in Nodes)
     {
-        <div style="position:absolute; 
-                    left:@(node.X)px; 
-                    top:@(node.Y)px; 
-                    z-index:@(node == draggingNode ? 1000 : 1);
-                    will-change:transform;">
-            <div @onmousedown="@(e => OnNodeMouseDown(e, node))" 
-                 @onmousedown:stopPropagation="true"
-                 @onmousedown:preventDefault="true">
-                <DiagramNodeView Node="@node" />
-            </div>
+        <div @key="node.Id"
+             style="position:absolute;
+            left:@(node.X)px;
+            top:@(node.Y)px;
+            z-index:@(node == draggingNode || node == selectedNode ? 1000 : 1);
+            cursor:move;"
+             data-node-id="@node.Id"
+             @onclick:stopPropagation="true">
+            <DiagramNodeView Node="@node"
+                             IsSelected="@(node == selectedNode)"
+                             OnNodeSelected="HandleNodeSelection"
+                             OnStartLinking="StartLinking"
+                             IsLinkingMode="@(isLinkingMode && linkingFromNode == node)"
+                             OnRemoveConnections="RemoveConnection" />
+        </div>
+    }
+
+    @if (isLinkingMode && linkingFromNode != null)
+    {
+        <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:2000;pointer-events:none;">
+            <MudChip T="string" Color="Color.Primary" Icon="@Icons.Material.Filled.Link">
+                Select target report item to link with @linkingFromNode.Item.ReportItemShort
+            </MudChip>
         </div>
     }
 </MudPaper>
 
 @code {
-    private MudPaper? canvasRef;
-    private DiagramNode? draggingNode;
-    private double dragStartX;
-    private double dragStartY;
-    private double nodeStartX;
-    private double nodeStartY;
-    private bool shouldRender = true;
-
-    [Parameter]
-    public List<DiagramNode> Nodes { get; set; } = new()
-    {
-        new DiagramNode { Title = "Node 1", Type = "Process", X = 50, Y = 50 },
-        new DiagramNode { Title = "Node 2", Type = "Decision", X = 300, Y = 150 }
-    };
-
-    protected override bool ShouldRender() => shouldRender;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("initDiagramCanvas", "diagram-canvas", 
-                DotNetObjectReference.Create(this));
-        }
-    }
-
-    [JSInvokable]
-    public void OnCanvasMouseMove(double relativeX, double relativeY)
-    {
-        if (draggingNode != null)
-        {
-            double deltaX = relativeX - dragStartX;
-            double deltaY = relativeY - dragStartY;
-
-            draggingNode.X = nodeStartX + deltaX;
-            draggingNode.Y = nodeStartY + deltaY;
-
-            shouldRender = true;
-            StateHasChanged();
-        }
-    }
-
-    [JSInvokable]
-    public void OnCanvasMouseUp()
-    {
-        draggingNode = null;
-        shouldRender = true;
-        StateHasChanged();
-    }
-
-    private void OnNodeMouseDown(MouseEventArgs e, DiagramNode node)
-    {
-        draggingNode = node;
-        dragStartX = node.X;
-        dragStartY = node.Y;
-        nodeStartX = node.X;
-        nodeStartY = node.Y;
-    }
+   
 }

@@ -1,5 +1,9 @@
 ﻿@using Shared.Components.DiagramBoard
 @using Shared.Components.DiagramBoard.DiagramCanvas
+<MudThemeProvider  />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
 <MudStack Spacing="0" Style="height:100vh;">
     <MudStack Spacing="0" Style="position:sticky; top:0; z-index:10; background:white;">
@@ -15,12 +19,6 @@
         justify-content:flex-start;
         gap:0px;
         padding:0px;">
-        <div style="flex-shrink:0;">
-            <DiagramCanvasView />
-        </div>
-        <div style="flex-shrink:0;">
-            <DiagramCanvasView />
-        </div>
         <div style="flex-shrink:0;">
             <DiagramCanvasView />
         </div>

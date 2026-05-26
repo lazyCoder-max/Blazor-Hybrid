@@ -1,25 +1,62 @@
 ﻿@using Shared.Models
 
-<MudCard Elevation="3" Style="@($"width:{Node.Width}px; cursor:move;background-color:lightgray;border-bottom-left-radius:5px;border-bottom-right-radius:5px;border-color:skyblue;border-width:2px")">
-    <MudCardHeader Style="padding:8px 12px; background:#f5f5f5; border-bottom:1px solid #ddd;">
-        <CardHeaderContent>
-            <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@Node.Title</MudText>
-        </CardHeaderContent>
-    </MudCardHeader>
-    <MudCardContent Style="padding:12px;">
-        <MudList T="DiagramNode" Dense="true" Style="padding:0;">
-            <MudListItem Style="padding:4px 0;">
-                <MudText Typo="Typo.body2">Type: @Node.Type</MudText>
-            </MudListItem>
-            <MudListItem Style="padding:4px 0;">
-                <MudText Typo="Typo.body2">ID: @Node.Id.ToString().Substring(0, 8)</MudText>
-            </MudListItem>
-            <MudListItem Style="padding:4px 0;">
-                <MudText Typo="Typo.body2">Position: (@Node.X.ToString("F0"), @Node.Y.ToString("F0"))</MudText>
-            </MudListItem>
-        </MudList>
-    </MudCardContent>
-</MudCard>
+<div style="@($"width:{Node.Width}px;")">
+    @if (IsSelected)
+    {
+        <MudPaper Elevation="1" Class="pa-1 mb-2" Style="@($"display:flex;justify-content:space-around;align-items:center;width:100%;")">
+            <MudTooltip Text="Open record in side panel" Placement="Placement.Top" Arrow="true">
+                <MudIconButton Icon="@navDrawerIcon" Size="Size.Small" />
+            </MudTooltip>
+            <MudTooltip Text="Delete" Placement="Placement.Top" Arrow="true">
+                <MudIconButton Icon="@deleteIcon" Size="Size.Small" />
+            </MudTooltip>
+            <MudTooltip Text="Duplicate" Placement="Placement.Top" Arrow="true">
+                <MudIconButton Icon="@duplicateIcon" Size="Size.Small" />
+            </MudTooltip>
+            <MudTooltip Text="@(linkButtonTooltip)" Placement="Placement.Top" Arrow="true">
+                <MudIconButton Icon="@(linkButtonIcon)" Size="Size.Small" OnClick="OnLinkButtonClicked" />
+            </MudTooltip>
+        </MudPaper>
+    }
+
+    <div style="@($"border-radius:10px;border-style:solid;border-color:{(IsSelected ? "#2196F3" : "transparent")};border-width:{(IsSelected ? "2px" : "0px")};padding:{(IsSelected ? "2px" : "0px")};transition:all 0.2s ease;{(IsSelected ? "box-shadow: 0 4px 20px rgba(33, 150, 243, 0.4);" : "")}")">
+        <MudCard Elevation="3" @onclick="HandleClick" Style="@($"width:100%;cursor:move;background-color:#FFFFFF;border-radius:10px;border-color:skyblue;border-top-width:3px;border-bottom-width:9px;border-left-width:3px;border-right-width:3px;")">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@Node.Item.ReportItemShort</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent Style="padding-right:8px; padding-left:8px">
+                <MudStack Style="padding:2px 0;">
+                    <MudTooltip Text="Report Item Content" Placement="Placement.Top" Arrow="true">
+                        <MudStack Spacing="1" Row AlignItems="AlignItems.End">
+                            <MudIcon Icon="@descriptionIcon" Size="Size.Small" />
+                            <MudText Typo="Typo.body2" Style="font-size:smaller" Align="Align.Start">
+                                @(Node.Item.ReportItemContentText?.Length > 37
+                                ? Node.Item.ReportItemContentText.Substring(0, 37) + "..."
+                                : Node.Item.ReportItemContentText)
+                            </MudText>
+                        </MudStack>
+                    </MudTooltip>
+                    <MudTooltip Text="Involved Entities" Placement="Placement.Top" Arrow="true">
+                        <MudStack Row Spacing="1" AlignItems="AlignItems.End">
+                            <MudIcon Icon="@involvedIcon" Size="Size.Small" />
+                            <MudText Typo="Typo.body2" Style="font-size:smaller;font-weight:500" Align="Align.Start">
+                                @(Node.Item.InvolvedEntities != null ? Node.Item.InvolvedEntities.Count : 0)
+                            </MudText>
+                        </MudStack>
+                    </MudTooltip>
+                    <MudStack AlignItems="AlignItems.Start">
+                        <MudTooltip Text="Status" Placement="Placement.Top" Arrow="true">
+                            <MudChip T="string" Label="true" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small">@Node.Item.StatusText</MudChip>
+                        </MudTooltip>
+                    </MudStack>
+
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+    </div>
+</div>
 
 @code {
 
