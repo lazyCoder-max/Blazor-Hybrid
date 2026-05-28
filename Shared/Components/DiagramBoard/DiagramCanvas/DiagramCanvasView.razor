@@ -24,12 +24,11 @@
             
             if (fromNode != null && toNode != null)
             {
-
-                // TODO determine connection points based on node positions (e.g., connect from right edge of fromNode to left edge of toNode)
-                var startX = fromNode.X + fromNode.Width;
-                var startY = fromNode.Y + fromNode.Height / 2;
-                var endX = toNode.X + toNode.Width / 2;
-                var endY = toNode.Y + toNode.Height / 2;
+                // Dynamically determine connection points based on node positions
+                var (startX, startY, endX, endY) = CalculateConnectionPoints(fromNode, toNode);
+                
+                // For simpler horizontal/vertical preference, use:
+                // var (startX, startY, endX, endY) = CalculateConnectionPointsSimple(fromNode, toNode);
                 
                 var midX = (startX + endX) / 2;
                 var midY = (startY + endY) / 2;
@@ -88,7 +87,9 @@
                              OnNodeSelected="HandleNodeSelection"
                              OnStartLinking="StartLinking"
                              IsLinkingMode="@(isLinkingMode && linkingFromNode == node)"
-                             OnRemoveConnections="RemoveConnection" />
+                             OnRemoveConnections="RemoveConnection"
+                             OnNodeDuplicated="HandleNodeDuplication"
+                             OnNodeDeleted="HandleNodeDeletion"/>
         </div>
     }
 

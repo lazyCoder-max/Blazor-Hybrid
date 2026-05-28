@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Shared.Models;
+using System.Xml.Linq;
 
 namespace Shared.Components.DiagramBoard.DiagramCanvas
 {
@@ -16,17 +17,17 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
 
         [Parameter]
         public EventCallback<DiagramNode> OnStartLinking { get; set; }
+        [Parameter]
+        public EventCallback<DiagramNode> OnNodeDuplicated { get; set; }
 
+        [Parameter]
+        public EventCallback<DiagramNode> OnNodeDeleted { get; set; }
         [Parameter]
         public bool IsLinkingMode { get; set; }
 
         [Parameter]
         public EventCallback<DiagramNode> OnRemoveConnections { get; set; }
 
-        private async Task HandleClick()
-        {
-            await OnNodeSelected.InvokeAsync(Node);
-        }
 
         private string positionX = "0";
         private string positionY = "0";
@@ -55,10 +56,16 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                 lastY = Node.Y;
             }
 
-            linkButtonTooltip = IsLinkingMode 
-                ? "Cancel linking" 
-                : Node.ConnectedNodeIds.Any() 
-                    ? "Remove connections" 
+            // Update link button state based on actual connection state
+            if (!Node.ConnectedNodeIds.Any())
+            {
+                isLinkButtonClicked = false;
+            }
+
+            linkButtonTooltip = IsLinkingMode
+                ? "Cancel linking"
+                : Node.ConnectedNodeIds.Any()
+                    ? "Remove connections"
                     : "Link to another node";
         }
 
@@ -77,6 +84,10 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             return shouldRender;
         }
 
+        private async Task HandleClick()
+        {
+            await OnNodeSelected.InvokeAsync(Node);
+        }
         private async Task OnLinkButtonClicked()
         {
             if (!IsSelected) return;
@@ -85,14 +96,29 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             {
                 // Remove existing connections
                 await OnRemoveConnections.InvokeAsync(Node);
+                
+                // Force re-evaluation of the link button state
+                isLinkButtonClicked = false;
+                lastIsLinkButtonClicked = false;
             }
             else
             {
                 // Start linking mode
+                isLinkButtonClicked = true;
                 await OnStartLinking.InvokeAsync(Node);
             }
-            
+
             await InvokeAsync(StateHasChanged);
+        }
+        private async Task OnDeleteButtonClicked()
+        {
+            if (!IsSelected) return;
+            await OnNodeDeleted.InvokeAsync(Node);
+        }
+        private async Task OnDuplicateButtonClicked()
+        {
+            if (!IsSelected) return;
+            await OnNodeDuplicated.InvokeAsync(Node);
         }
     }
 }

@@ -8,10 +8,10 @@
                 <MudIconButton Icon="@navDrawerIcon" Size="Size.Small" />
             </MudTooltip>
             <MudTooltip Text="Delete" Placement="Placement.Top" Arrow="true">
-                <MudIconButton Icon="@deleteIcon" Size="Size.Small" />
+                <MudIconButton Icon="@deleteIcon" Size="Size.Small" OnClick="OnDeleteButtonClicked" />
             </MudTooltip>
             <MudTooltip Text="Duplicate" Placement="Placement.Top" Arrow="true">
-                <MudIconButton Icon="@duplicateIcon" Size="Size.Small" />
+                <MudIconButton Icon="@duplicateIcon" Size="Size.Small" OnClick="OnDuplicateButtonClicked" />
             </MudTooltip>
             <MudTooltip Text="@(linkButtonTooltip)" Placement="Placement.Top" Arrow="true">
                 <MudIconButton Icon="@(linkButtonIcon)" Size="Size.Small" OnClick="OnLinkButtonClicked" />
