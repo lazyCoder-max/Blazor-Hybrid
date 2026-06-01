@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using MudBlazor;
 using Shared.Models;
@@ -21,11 +22,23 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
         private const double MIN_HEIGHT = 549;
         private DiagramNode? selectedNode;
         private bool isInitialized = false;
-        
+
         // Connection management
         private DiagramNode? linkingFromNode = null;
         private bool isLinkingMode = false;
         private List<NodeConnection> connections = new List<NodeConnection>();
+
+
+        private double panX = 0;
+        private double panY = 0;
+        private bool isPanning = false;
+        private double lastMouseX = 0;
+        private double lastMouseY = 0;
+        private const double MIN_ZOOM = 0.25;
+        private const double MAX_ZOOM = 3.0;
+        private const double ZOOM_STEP = 0.1;
+
+        public double ZoomLevel { get; set; } = 1.0;
 
         [Parameter]
         public List<DiagramNode> Nodes { get; set; } = new()
@@ -209,38 +222,57 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             }
         }
 
-        private void InitializeNodePositions()
+        public void InitializeNodePositions()
         {
             if (!Nodes.Any()) return;
 
-            // Option 1: Grid Layout
-            //LayoutNodesInGrid();
+            // Clear existing positions to ensure clean re-layout
+            // This prevents overlap detection from considering old positions
+            foreach (var node in Nodes)
+            {
+                node.X = 0;
+                node.Y = 0;
+            }
 
-            // Option 2: Vertical Flow Layout (uncomment to use)
-             // LayoutNodesVertically();
-
-            // Option 3: Horizontal Flow Layout (uncomment to use)
-            // LayoutNodesHorizontally();
-
-            // Option 4: Centered Layout (uncomment to use)
-             LayoutNodesCentered();
+            LayoutNodesInGrid();
         }
 
         private void LayoutNodesInGrid()
         {
-            const int columns = 3; // Number of columns in grid
+            const double buffer = 20.0;
             const double horizontalSpacing = 350; // Space between nodes horizontally
-            const double verticalSpacing = 250; // Space between nodes vertically
+            const double verticalSpacing = 280; // Space between nodes vertically
             const double startX = PADDING;
             const double startY = PADDING;
 
+            // Calculate optimal number of columns based on node count
+            int columns = (int)Math.Ceiling(Math.Sqrt(Nodes.Count));
+
+            // Track which nodes have been positioned
+            var positionedNodes = new HashSet<DiagramNode>();
+
             for (int i = 0; i < Nodes.Count; i++)
             {
+                var node = Nodes[i];
+
                 int row = i / columns;
                 int col = i % columns;
 
-                Nodes[i].X = startX + (col * horizontalSpacing);
-                Nodes[i].Y = startY + (row * verticalSpacing);
+                double initialX = startX + (col * horizontalSpacing);
+                double initialY = startY + (row * verticalSpacing);
+
+                // Check for overlaps and adjust if needed
+                var (finalX, finalY) = FindNonOverlappingPosition(
+                    node,
+                    initialX,
+                    initialY,
+                    buffer,
+                    positionedNodes);
+
+                node.X = finalX;
+                node.Y = finalY;
+
+                positionedNodes.Add(node);
             }
         }
 
@@ -272,18 +304,50 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
 
         private void LayoutNodesCentered()
         {
-            const double spacing = 250;
+            const double buffer = 25.0; // Increased buffer for better spacing
             double centerX = (MIN_WIDTH - Nodes.First().Width) / 2;
             double centerY = (MIN_HEIGHT - Nodes.First().Height) / 2;
 
+            // Calculate dynamic spacing based on number of nodes and node dimensions
+            // Formula: ensure minimum circumference can fit all nodes with buffer
+            double avgNodeWidth = Nodes.Average(n => n.Width);
+            double avgNodeHeight = Nodes.Average(n => n.Height);
+            double avgNodeDimension = Math.Max(avgNodeWidth, avgNodeHeight);
+
+            // Calculate required spacing to prevent overlaps in circular layout
+            // Circumference = 2πr, need space for all nodes: 2πr ≥ n * (nodeWidth + buffer)
+            double minCircumference = Nodes.Count * (avgNodeDimension + buffer * 2);
+            double minRadius = minCircumference / (2 * Math.PI);
+            double spacing = Math.Max(250, minRadius * 1.2); // 20% extra margin
+
+            // Track which nodes have been positioned to avoid false overlaps
+            var positionedNodes = new HashSet<DiagramNode>();
+
             for (int i = 0; i < Nodes.Count; i++)
             {
-                // Arrange in a circle or staggered pattern
+                var node = Nodes[i];
+
+                // Calculate initial position in circular pattern
                 double angle = (2 * Math.PI * i) / Nodes.Count;
-                Nodes[i].X = centerX + (spacing * Math.Cos(angle));
-                Nodes[i].Y = centerY + (spacing * Math.Sin(angle));
+                double initialX = centerX + (spacing * Math.Cos(angle));
+                double initialY = centerY + (spacing * Math.Sin(angle));
+
+                // Check for overlaps only with already-positioned nodes
+                var (finalX, finalY) = FindNonOverlappingPosition(
+                    node,
+                    initialX,
+                    initialY,
+                    buffer,
+                    positionedNodes);
+
+                node.X = finalX;
+                node.Y = finalY;
+
+                // Mark this node as positioned
+                positionedNodes.Add(node);
             }
         }
+
 
         [JSInvokable]
         public Task OnNodeDragComplete(string nodeId, double newX, double newY)
@@ -300,7 +364,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
         }
 
 
-        private void DeselectAllNodes()
+        public void DeselectAllNodes()
         {
             selectedNode = null;
             isLinkingMode = false;
@@ -315,14 +379,14 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             InvokeAsync(StateHasChanged);
         }
 
-        private void CreateConnection(DiagramNode fromNode, DiagramNode toNode)
+        public void CreateConnection(DiagramNode fromNode, DiagramNode toNode)
         {
             // Determine order based on ReportItemCode
             var fromCode = fromNode.Item.ReportAndReportItemCode ?? "";
             var toCode = toNode.Item.ReportAndReportItemCode ?? "";
 
             // Check if connection already exists
-            if (connections.Any(c => 
+            if (connections.Any(c =>
                 (c.FromNodeId == fromNode.Id && c.ToNodeId == toNode.Id) ||
                 (c.FromNodeId == toNode.Id && c.ToNodeId == fromNode.Id)))
             {
@@ -343,7 +407,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             //}
             //else
             //{
-                
+
             //}
             connections.Add(new NodeConnection
             {
@@ -380,7 +444,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             foreach (var connection in connectionsToRemove)
             {
                 connections.Remove(connection);
-                
+
                 // Clean up both sides of the connection
                 var fromNode = Nodes.FirstOrDefault(n => n.Id == connection.FromNodeId);
                 var toNode = Nodes.FirstOrDefault(n => n.Id == connection.ToNodeId);
@@ -390,7 +454,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                 {
                     fromNode.ConnectedNodeIds.Remove(connection.ToNodeId);
                 }
-                
+
                 if (toNode != null)
                 {
                     toNode.ConnectedNodeIds.Remove(connection.FromNodeId);
@@ -463,10 +527,11 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             DiagramNode node,
             double startX,
             double startY,
-            double buffer = 8.0)
+            double buffer = 8.0,
+            HashSet<DiagramNode>? alreadyPositioned = null)
         {
             // Already clear — use it immediately
-            if (!HasOverlapAt(node, startX, startY, buffer))
+            if (!HasOverlapAt(node, startX, startY, buffer, alreadyPositioned))
                 return (startX, startY);
 
             const int MaxAttempts = 100;
@@ -480,22 +545,35 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                 double candidateX = startX + radius * Math.Cos(angle);
                 double candidateY = startY + radius * Math.Sin(angle);
 
-                if (!HasOverlapAt(node, candidateX, candidateY, buffer))
+                if (!HasOverlapAt(node, candidateX, candidateY, buffer, alreadyPositioned))
                     return (candidateX, candidateY);
             }
 
             // Spiral exhausted — fall back to below all existing nodes
-            return GetFallbackPosition(node, buffer);
+            return GetFallbackPosition(node, buffer, alreadyPositioned);
         }
 
         /// <summary>
         /// Returns true if placing <paramref name="node"/> at (<paramref name="x"/>, <paramref name="y"/>)
         /// would overlap any existing node.
         /// </summary>
-        private bool HasOverlapAt(DiagramNode node, double x, double y, double buffer = 8.0)
+        private bool HasOverlapAt(
+            DiagramNode node,
+            double x,
+            double y,
+            double buffer = 8.0,
+            HashSet<DiagramNode>? alreadyPositioned = null)
         {
-            return Nodes.Any(existing =>
+            // If alreadyPositioned is provided, only check against those nodes
+            // Otherwise check against all nodes (useful for duplication where all nodes are positioned)
+            var nodesToCheck = alreadyPositioned ?? Nodes.ToHashSet();
+
+            return nodesToCheck.Any(existing =>
             {
+                // Don't check against self
+                if (existing.Id == node.Id)
+                    return false;
+
                 double horizontalGap = Math.Abs(existing.X - x);
                 double verticalGap = Math.Abs(existing.Y - y);
 
@@ -510,16 +588,22 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
         /// <summary>
         /// Fallback: places the node below all existing nodes when the spiral search fails.
         /// </summary>
-        private (double X, double Y) GetFallbackPosition(DiagramNode node, double buffer = 8.0)
+        private (double X, double Y) GetFallbackPosition(
+            DiagramNode node,
+            double buffer = 8.0,
+            HashSet<DiagramNode>? alreadyPositioned = null)
         {
-            if (!Nodes.Any())
-                return (0, 0);
+            var nodesToCheck = alreadyPositioned ?? Nodes.ToHashSet();
 
-            double lowestY = Nodes.Max(n => n.Y + n.Height);
-            return (0, lowestY + buffer);
+            if (!nodesToCheck.Any())
+                return (PADDING, PADDING);
+
+            double lowestY = nodesToCheck.Max(n => n.Y + n.Height);
+            return (PADDING, lowestY + buffer);
         }
-       
-        private void UpdateCanvasSize()
+
+
+        public void UpdateCanvasSize()
         {
             if (!Nodes.Any()) return;
 
@@ -579,11 +663,14 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
         /// <summary>
         /// Determines the optimal connection points between two nodes based on their relative positions.
         /// Returns (startX, startY, endX, endY) coordinates for the connection line.
+        /// The endpoint is offset slightly to prevent arrow overlap with the node border.
         /// </summary>
         private (double StartX, double StartY, double EndX, double EndY) CalculateConnectionPoints(
-            DiagramNode fromNode, 
+            DiagramNode fromNode,
             DiagramNode toNode)
         {
+            const double ArrowOffset = 8.0; // Offset to prevent arrow from overlapping node border
+
             // Calculate center points of both nodes
             var fromCenterX = fromNode.X + fromNode.Width / 2;
             var fromCenterY = fromNode.Y + fromNode.Height / 2;
@@ -603,7 +690,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             // Determine which edge of fromNode to connect from
             // Use the edge that faces toward the toNode
             var absAngle = Math.Abs(angle);
-            
+
             if (absAngle < Math.PI / 4) // Right edge (0° ± 45°)
             {
                 startX = fromNode.X + fromNode.Width;
@@ -632,23 +719,23 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
 
             if (absReverseAngle < Math.PI / 4) // Right edge
             {
-                endX = toNode.X + toNode.Width;
+                endX = toNode.X + toNode.Width + ArrowOffset; // Offset right
                 endY = toCenterY;
             }
             else if (absReverseAngle > 3 * Math.PI / 4) // Left edge
             {
-                endX = toNode.X;
+                endX = toNode.X - ArrowOffset; // Offset left
                 endY = toCenterY;
             }
             else if (reverseAngle > 0) // Bottom edge
             {
                 endX = toCenterX;
-                endY = toNode.Y + toNode.Height;
+                endY = toNode.Y + toNode.Height + ArrowOffset; // Offset down
             }
             else // Top edge
             {
                 endX = toCenterX;
-                endY = toNode.Y;
+                endY = toNode.Y - ArrowOffset; // Offset up
             }
 
             return (startX, startY, endX, endY);
@@ -657,11 +744,14 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
         /// <summary>
         /// Alternative simpler approach: connect from the closest edges between two nodes.
         /// This is useful when you want horizontal/vertical preference.
+        /// The endpoint is offset to prevent arrow overlap with the node border.
         /// </summary>
         private (double StartX, double StartY, double EndX, double EndY) CalculateConnectionPointsSimple(
             DiagramNode fromNode,
             DiagramNode toNode)
         {
+            const double ArrowOffset = 8.0; // Offset to prevent arrow from overlapping node border
+
             var fromCenterX = fromNode.X + fromNode.Width / 2;
             var fromCenterY = fromNode.Y + fromNode.Height / 2;
             var toCenterX = toNode.X + toNode.Width / 2;
@@ -681,7 +771,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                     // Connect from right edge of fromNode to left edge of toNode
                     startX = fromNode.X + fromNode.Width;
                     startY = fromCenterY;
-                    endX = toNode.X;
+                    endX = toNode.X - ArrowOffset; // Offset left
                     endY = toCenterY;
                 }
                 else
@@ -689,7 +779,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                     // Connect from left edge of fromNode to right edge of toNode
                     startX = fromNode.X;
                     startY = fromCenterY;
-                    endX = toNode.X + toNode.Width;
+                    endX = toNode.X + toNode.Width + ArrowOffset; // Offset right
                     endY = toCenterY;
                 }
             }
@@ -702,7 +792,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                     startX = fromCenterX;
                     startY = fromNode.Y + fromNode.Height;
                     endX = toCenterX;
-                    endY = toNode.Y;
+                    endY = toNode.Y - ArrowOffset; // Offset up
                 }
                 else
                 {
@@ -710,11 +800,132 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                     startX = fromCenterX;
                     startY = fromNode.Y;
                     endX = toCenterX;
-                    endY = toNode.Y + toNode.Height;
+                    endY = toNode.Y + toNode.Height + ArrowOffset; // Offset down
                 }
             }
 
             return (startX, startY, endX, endY);
+        }
+
+        private string GetCanvasStyle()
+        {
+            return $@"
+        height:{canvasHeight}px;
+        width:{canvasWidth}px;
+        min-height:549px;
+        min-width:849px;
+        background:white;
+        position:relative;
+        box-shadow:0 0 10px rgba(0,0,0,0.2);
+        background-image:linear-gradient(#ddd 1px, transparent 1px),linear-gradient(90deg, #ddd 1px, transparent 1px);
+        background-size:{20 * ZoomLevel}px {20 * ZoomLevel}px;
+        overflow:hidden;
+        user-select:none;
+        transform:scale({ZoomLevel}) translate({panX}px, {panY}px);
+        transform-origin:0 0;
+        transition:transform 0.1s ease-out;
+    ";
+        }
+
+        public void ZoomIn()
+        {
+            if (ZoomLevel < MAX_ZOOM)
+            {
+                ZoomLevel = Math.Min(ZoomLevel + ZOOM_STEP, MAX_ZOOM);
+                InvokeAsync(StateHasChanged);
+            }
+        }
+
+        public void ZoomOut()
+        {
+            if (ZoomLevel > MIN_ZOOM)
+            {
+                ZoomLevel = Math.Max(ZoomLevel - ZOOM_STEP, MIN_ZOOM);
+                InvokeAsync(StateHasChanged);
+            }
+        }
+
+        public void ResetZoom()
+        {
+            ZoomLevel = 1.0;
+            panX = 0;
+            panY = 0;
+            InvokeAsync(StateHasChanged);
+        }
+
+        public void FitToScreen()
+        {
+            if (!Nodes.Any()) return;
+
+            // Calculate bounds of all nodes
+            var minX = Nodes.Min(n => n.X);
+            var minY = Nodes.Min(n => n.Y);
+            var maxX = Nodes.Max(n => n.X + n.Width);
+            var maxY = Nodes.Max(n => n.Y + n.Height);
+
+            var contentWidth = maxX - minX + PADDING * 2;
+            var contentHeight = maxY - minY + PADDING * 2;
+
+            // Calculate zoom to fit
+            var zoomX = MIN_WIDTH / contentWidth;
+            var zoomY = MIN_HEIGHT / contentHeight;
+            ZoomLevel = Math.Min(Math.Min(zoomX, zoomY), MAX_ZOOM);
+            ZoomLevel = Math.Max(ZoomLevel, MIN_ZOOM);
+
+            // Center the content
+            panX = -minX + PADDING;
+            panY = -minY + PADDING;
+
+            InvokeAsync(StateHasChanged);
+        }
+
+        private void HandleMouseWheel(WheelEventArgs e)
+        {
+            // Zoom with mouse wheel (Ctrl + Wheel)
+            if (e.CtrlKey)
+            {
+                if (e.DeltaY < 0)
+                {
+                    ZoomIn();
+                }
+                else
+                {
+                    ZoomOut();
+                }
+            }
+        }
+
+        private void HandleMouseDown(MouseEventArgs e)
+        {
+            // Start panning with middle mouse button or Shift + Left click
+            if (e.Button == 1 || (e.Button == 0 && e.ShiftKey))
+            {
+                isPanning = true;
+                lastMouseX = e.ClientX;
+                lastMouseY = e.ClientY;
+            }
+        }
+
+        private void HandleMouseMove(MouseEventArgs e)
+        {
+            if (isPanning)
+            {
+                var deltaX = e.ClientX - lastMouseX;
+                var deltaY = e.ClientY - lastMouseY;
+
+                panX += deltaX / ZoomLevel;
+                panY += deltaY / ZoomLevel;
+
+                lastMouseX = e.ClientX;
+                lastMouseY = e.ClientY;
+
+                InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private void HandleMouseUp(MouseEventArgs e)
+        {
+            isPanning = false;
         }
     }
 }
