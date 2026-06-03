@@ -16,6 +16,7 @@
 
         // List of node IDs this node connects to
         public List<Guid> ConnectedNodeIds { get; set; } = new List<Guid>();
+        public bool IsSubReportItem { get; set; } = false;
     }
 
     public class NodeConnection
@@ -24,6 +25,7 @@
         public Guid ToNodeId { get; set; }
         public string FromCode { get; set; } = "";
         public string ToCode { get; set; } = "";
+        public bool IsSubReportConnection { get; set; } = false; // NEW: Flag for subreport connections
     }
 
     public class ReportItem

@@ -13,6 +13,8 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
 {
     public partial class DiagramCanvasView
     {
+        [Inject]  private ISnackbar _snackbar { get; set; } = default!;
+
         private MudPaper? canvasRef;
         private DiagramNode? draggingNode;
         private double canvasWidth = 849;
@@ -276,77 +278,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             }
         }
 
-        private void LayoutNodesVertically()
-        {
-            const double verticalSpacing = 200; // Space between nodes
-            const double startX = PADDING;
-            const double startY = PADDING;
 
-            for (int i = 0; i < Nodes.Count; i++)
-            {
-                Nodes[i].X = startX;
-                Nodes[i].Y = startY + (i * verticalSpacing);
-            }
-        }
-
-        private void LayoutNodesHorizontally()
-        {
-            const double horizontalSpacing = 350; // Space between nodes
-            const double startX = PADDING;
-            const double startY = PADDING;
-
-            for (int i = 0; i < Nodes.Count; i++)
-            {
-                Nodes[i].X = startX + (i * horizontalSpacing);
-                Nodes[i].Y = startY;
-            }
-        }
-
-        private void LayoutNodesCentered()
-        {
-            const double buffer = 25.0; // Increased buffer for better spacing
-            double centerX = (MIN_WIDTH - Nodes.First().Width) / 2;
-            double centerY = (MIN_HEIGHT - Nodes.First().Height) / 2;
-
-            // Calculate dynamic spacing based on number of nodes and node dimensions
-            // Formula: ensure minimum circumference can fit all nodes with buffer
-            double avgNodeWidth = Nodes.Average(n => n.Width);
-            double avgNodeHeight = Nodes.Average(n => n.Height);
-            double avgNodeDimension = Math.Max(avgNodeWidth, avgNodeHeight);
-
-            // Calculate required spacing to prevent overlaps in circular layout
-            // Circumference = 2πr, need space for all nodes: 2πr ≥ n * (nodeWidth + buffer)
-            double minCircumference = Nodes.Count * (avgNodeDimension + buffer * 2);
-            double minRadius = minCircumference / (2 * Math.PI);
-            double spacing = Math.Max(250, minRadius * 1.2); // 20% extra margin
-
-            // Track which nodes have been positioned to avoid false overlaps
-            var positionedNodes = new HashSet<DiagramNode>();
-
-            for (int i = 0; i < Nodes.Count; i++)
-            {
-                var node = Nodes[i];
-
-                // Calculate initial position in circular pattern
-                double angle = (2 * Math.PI * i) / Nodes.Count;
-                double initialX = centerX + (spacing * Math.Cos(angle));
-                double initialY = centerY + (spacing * Math.Sin(angle));
-
-                // Check for overlaps only with already-positioned nodes
-                var (finalX, finalY) = FindNonOverlappingPosition(
-                    node,
-                    initialX,
-                    initialY,
-                    buffer,
-                    positionedNodes);
-
-                node.X = finalX;
-                node.Y = finalY;
-
-                // Mark this node as positioned
-                positionedNodes.Add(node);
-            }
-        }
 
 
         [JSInvokable]
@@ -379,7 +311,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             InvokeAsync(StateHasChanged);
         }
 
-        public void CreateConnection(DiagramNode fromNode, DiagramNode toNode)
+        public void CreateConnection(DiagramNode fromNode, DiagramNode toNode, bool isSubReportConnection = false)
         {
             // Determine order based on ReportItemCode
             var fromCode = fromNode.Item.ReportAndReportItemCode ?? "";
@@ -390,31 +322,41 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                 (c.FromNodeId == fromNode.Id && c.ToNodeId == toNode.Id) ||
                 (c.FromNodeId == toNode.Id && c.ToNodeId == fromNode.Id)))
             {
+                _snackbar.Add("A connection between these nodes already exists.", Severity.Warning);
                 return;
             }
 
-            // Order by ReportItemCode
-            //if (string.Compare(fromCode, toCode, StringComparison.Ordinal) <= 0)
-            //{
-            //    connections.Add(new NodeConnection
-            //    {
-            //        FromNodeId = fromNode.Id,
-            //        ToNodeId = toNode.Id,
-            //        FromCode = fromCode,
-            //        ToCode = toCode
-            //    });
-            //    fromNode.ConnectedNodeIds.Add(toNode.Id);
-            //}
-            //else
-            //{
+            // Connection from subreport-item node to parent report-item node should be allowed
 
-            //}
+            if(fromNode.IsSubReportItem && !toNode.IsSubReportItem)
+            {
+                _snackbar.Add("Connection from subreport item to parent report item is not allowed.", Severity.Warning);    
+                return;
+            }
+            if(!fromNode.IsSubReportItem && toNode.IsSubReportItem)
+            {
+                // Check if any subreport in the target's chain is already connected to another parent
+                if (HasSubreportChainWithOtherParent(toNode, fromNode))
+                {
+                    _snackbar.Add($"only one parent is allowed for subreport chains.", Severity.Warning);
+                    return;
+                }
+            }
+            if(fromNode.IsSubReportItem && toNode.IsSubReportItem)
+            {
+                if(HasSubreportChainWithOtherParent(toNode, fromNode))
+                {
+                    _snackbar.Add($"Cannot connect two subreport items that are already connected to different parent nodes.", Severity.Warning);
+                    return;
+                }
+            }
             connections.Add(new NodeConnection
             {
                 FromNodeId = fromNode.Id,
                 ToNodeId = toNode.Id,
                 FromCode = fromCode,
-                ToCode = toCode
+                ToCode = toCode,
+                IsSubReportConnection = isSubReportConnection 
             });
             fromNode.ConnectedNodeIds.Add(toNode.Id);
         }
@@ -425,7 +367,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             // If in linking mode, create connection
             if (isLinkingMode && linkingFromNode != null && linkingFromNode != node)
             {
-                CreateConnection(linkingFromNode, node);
+                CreateConnection(linkingFromNode, node, isSubReportConnection: linkingFromNode.IsSubReportItem);
                 isLinkingMode = false;
                 linkingFromNode = null;
             }
@@ -490,7 +432,8 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
                 X = newX,
                 Y = newY,
                 Width = node.Width,
-                Height = node.Height
+                Height = node.Height,
+                IsSubReportItem = node.IsSubReportItem
             };
 
             newNode.Item = new ReportItem
@@ -511,6 +454,11 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             };
 
             Nodes.Add(newNode);
+
+            if (node.IsSubReportItem)
+            {
+                CreateConnection(node, newNode, isSubReportConnection: true);
+            }
 
             // Update canvas size and ensure proper positioning
             UpdateCanvasSize();
@@ -660,152 +608,7 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
             InvokeAsync(StateHasChanged);
         }
 
-        /// <summary>
-        /// Determines the optimal connection points between two nodes based on their relative positions.
-        /// Returns (startX, startY, endX, endY) coordinates for the connection line.
-        /// The endpoint is offset slightly to prevent arrow overlap with the node border.
-        /// </summary>
-        private (double StartX, double StartY, double EndX, double EndY) CalculateConnectionPoints(
-            DiagramNode fromNode,
-            DiagramNode toNode)
-        {
-            const double ArrowOffset = 8.0; // Offset to prevent arrow from overlapping node border
 
-            // Calculate center points of both nodes
-            var fromCenterX = fromNode.X + fromNode.Width / 2;
-            var fromCenterY = fromNode.Y + fromNode.Height / 2;
-            var toCenterX = toNode.X + toNode.Width / 2;
-            var toCenterY = toNode.Y + toNode.Height / 2;
-
-            // Calculate the angle between node centers
-            var deltaX = toCenterX - fromCenterX;
-            var deltaY = toCenterY - fromCenterY;
-            var angle = Math.Atan2(deltaY, deltaX);
-
-            // Define connection edge points
-            // For fromNode: Calculate which edge to use based on angle to target
-            double startX, startY;
-            double endX, endY;
-
-            // Determine which edge of fromNode to connect from
-            // Use the edge that faces toward the toNode
-            var absAngle = Math.Abs(angle);
-
-            if (absAngle < Math.PI / 4) // Right edge (0° ± 45°)
-            {
-                startX = fromNode.X + fromNode.Width;
-                startY = fromCenterY;
-            }
-            else if (absAngle > 3 * Math.PI / 4) // Left edge (180° ± 45°)
-            {
-                startX = fromNode.X;
-                startY = fromCenterY;
-            }
-            else if (angle > 0) // Bottom edge (90° ± 45°)
-            {
-                startX = fromCenterX;
-                startY = fromNode.Y + fromNode.Height;
-            }
-            else // Top edge (-90° ± 45°)
-            {
-                startX = fromCenterX;
-                startY = fromNode.Y;
-            }
-
-            // Now determine which edge of toNode to connect to
-            // Use the opposite angle (from toNode back to fromNode)
-            var reverseAngle = Math.Atan2(-deltaY, -deltaX);
-            var absReverseAngle = Math.Abs(reverseAngle);
-
-            if (absReverseAngle < Math.PI / 4) // Right edge
-            {
-                endX = toNode.X + toNode.Width + ArrowOffset; // Offset right
-                endY = toCenterY;
-            }
-            else if (absReverseAngle > 3 * Math.PI / 4) // Left edge
-            {
-                endX = toNode.X - ArrowOffset; // Offset left
-                endY = toCenterY;
-            }
-            else if (reverseAngle > 0) // Bottom edge
-            {
-                endX = toCenterX;
-                endY = toNode.Y + toNode.Height + ArrowOffset; // Offset down
-            }
-            else // Top edge
-            {
-                endX = toCenterX;
-                endY = toNode.Y - ArrowOffset; // Offset up
-            }
-
-            return (startX, startY, endX, endY);
-        }
-
-        /// <summary>
-        /// Alternative simpler approach: connect from the closest edges between two nodes.
-        /// This is useful when you want horizontal/vertical preference.
-        /// The endpoint is offset to prevent arrow overlap with the node border.
-        /// </summary>
-        private (double StartX, double StartY, double EndX, double EndY) CalculateConnectionPointsSimple(
-            DiagramNode fromNode,
-            DiagramNode toNode)
-        {
-            const double ArrowOffset = 8.0; // Offset to prevent arrow from overlapping node border
-
-            var fromCenterX = fromNode.X + fromNode.Width / 2;
-            var fromCenterY = fromNode.Y + fromNode.Height / 2;
-            var toCenterX = toNode.X + toNode.Width / 2;
-            var toCenterY = toNode.Y + toNode.Height / 2;
-
-            double startX, startY, endX, endY;
-
-            // Horizontal distance vs vertical distance
-            var horizontalGap = Math.Abs(toCenterX - fromCenterX);
-            var verticalGap = Math.Abs(toCenterY - fromCenterY);
-
-            if (horizontalGap > verticalGap)
-            {
-                // Prefer horizontal connection (right to left or left to right)
-                if (toCenterX > fromCenterX)
-                {
-                    // Connect from right edge of fromNode to left edge of toNode
-                    startX = fromNode.X + fromNode.Width;
-                    startY = fromCenterY;
-                    endX = toNode.X - ArrowOffset; // Offset left
-                    endY = toCenterY;
-                }
-                else
-                {
-                    // Connect from left edge of fromNode to right edge of toNode
-                    startX = fromNode.X;
-                    startY = fromCenterY;
-                    endX = toNode.X + toNode.Width + ArrowOffset; // Offset right
-                    endY = toCenterY;
-                }
-            }
-            else
-            {
-                // Prefer vertical connection (top to bottom or bottom to top)
-                if (toCenterY > fromCenterY)
-                {
-                    // Connect from bottom edge of fromNode to top edge of toNode
-                    startX = fromCenterX;
-                    startY = fromNode.Y + fromNode.Height;
-                    endX = toCenterX;
-                    endY = toNode.Y - ArrowOffset; // Offset up
-                }
-                else
-                {
-                    // Connect from top edge of fromNode to bottom edge of toNode
-                    startX = fromCenterX;
-                    startY = fromNode.Y;
-                    endX = toCenterX;
-                    endY = toNode.Y + toNode.Height + ArrowOffset; // Offset down
-                }
-            }
-
-            return (startX, startY, endX, endY);
-        }
 
         private string GetCanvasStyle()
         {
@@ -927,5 +730,119 @@ namespace Shared.Components.DiagramBoard.DiagramCanvas
         {
             isPanning = false;
         }
+        private void HandleAddSubReportItemClicked(DiagramNode node)
+        {
+            const double Buffer = 8.0;
+            const double BaseOffsetX = 180.0;
+
+            double newX = node.X + BaseOffsetX;
+            double newY = node.Y;
+
+            (newX, newY) = FindNonOverlappingPosition(node, newX, newY, Buffer);
+
+            var newNode = new DiagramNode
+            {
+                Id = Guid.NewGuid(),
+                Title = node.Title + " (Copy)",
+                Type = node.Type,
+                X = newX,
+                Y = newY,
+                Width = node.Width,
+                Height = node.Height,
+                IsSubReportItem = true
+            };
+
+            newNode.Item = new ReportItem
+            {
+                ReportItemId = node.Item.ReportItemId,
+                ReportItemShort = node.Item.ReportItemShort + " (Copy)",
+                ReportItemCode = node.Item.ReportItemCode + "-Copy",
+                ReportID = node.Item.ReportID,
+                attributeValues = node.Item.attributeValues,
+                InvolvedEntities = node.Item.InvolvedEntities?.ToList() ?? new List<Involvedentity>(),
+                Chapter = node.Item.Chapter,
+                ReportItemContentText = node.Item.ReportItemContentText,
+                ItemStatus = node.Item.ItemStatus,
+                StatusText = node.Item.StatusText,
+                ReportAndReportItemCode = node.Item.ReportAndReportItemCode,
+                ReportCollectionID = node.Item.ReportCollectionID,
+                ReportCode = node.Item.ReportCode
+            };
+
+            Nodes.Add(newNode);
+
+            // Update canvas size and ensure proper positioning
+            UpdateCanvasSize();
+
+            CreateConnection(node, newNode, isSubReportConnection: true);
+
+
+            InvokeAsync(StateHasChanged);
+        }
+        /// <summary>
+        /// Removes a specific connection between two nodes.
+        /// Called when the connection label is double-clicked.
+        /// </summary>
+        public void RemoveSpecificConnection(NodeConnection connection)
+        {
+            // Remove the connection from the list
+            connections.Remove(connection);
+
+            // Clean up both sides of the connection
+            var fromNode = Nodes.FirstOrDefault(n => n.Id == connection.FromNodeId);
+            var toNode = Nodes.FirstOrDefault(n => n.Id == connection.ToNodeId);
+
+            // Remove references from both nodes
+            if (fromNode != null)
+            {
+                fromNode.ConnectedNodeIds.Remove(connection.ToNodeId);
+            }
+
+            if (toNode != null)
+            {
+                toNode.ConnectedNodeIds.Remove(connection.FromNodeId);
+            }
+
+            InvokeAsync(StateHasChanged);
+        }
+
+        /// <summary>
+        /// Recursively checks if a subreport node or any of its connected subreports
+        /// is already connected to a different parent node.
+        /// </summary>
+        private bool HasSubreportChainWithOtherParent(DiagramNode subreportNode, DiagramNode excludeParent)
+        {
+            if (!subreportNode.IsSubReportItem)
+                return false;
+
+            // Check if this subreport is connected to any other parent
+            var parentConnections = connections
+                .Where(c => c.FromNodeId == subreportNode.Id || c.ToNodeId == subreportNode.Id)
+                .Select(c => c.FromNodeId == subreportNode.Id ? c.ToNodeId : c.FromNodeId)
+                .Select(id => Nodes.FirstOrDefault(n => n.Id == id))
+                .Where(n => n != null && !n.IsSubReportItem && n.Id != excludeParent.Id)
+                .ToList();
+
+            if (parentConnections.Any())
+                return true;
+
+            // Get all connected subreport nodes
+            var connectedSubreports = connections
+                .Where(c => c.FromNodeId == subreportNode.Id || c.ToNodeId == subreportNode.Id)
+                .Select(c => c.FromNodeId == subreportNode.Id ? c.ToNodeId : c.FromNodeId)
+                .Select(id => Nodes.FirstOrDefault(n => n.Id == id))
+                .Where(n => n != null && n.IsSubReportItem)
+                .ToList();
+
+            // Recursively check each connected subreport
+            foreach (var connectedSubreport in connectedSubreports)
+            {
+                if (HasSubreportChainWithOtherParent(connectedSubreport, excludeParent))
+                    return true;
+            }
+
+            return false;
+        }
     }
+
 }

@@ -1,79 +1,180 @@
 ﻿@using Shared.Models
 @inject IJSRuntime JSRuntime
 
-<div id="diagram-canvas-container" 
+<div id="diagram-canvas-container"
      style="overflow:auto;width:100%;height:100%;position:relative;"
      @onwheel="HandleMouseWheel"
      @onmousedown="HandleMouseDown"
      @onmousemove="HandleMouseMove"
      @onmouseup="HandleMouseUp"
      @onmouseleave="HandleMouseUp">
-    
+
     <MudPaper @ref="canvasRef"
               id="diagram-canvas"
               @onclick="DeselectAllNodes"
-              Class="d-flex justify-center align-center" 
-              Style="@GetCanvasStyle()" 
+              Class="d-flex justify-center align-center"
+              Style="@GetCanvasStyle()"
               Elevation="0">
-        
+
         @* SVG Layer for connections - MUST be absolute positioned *@
         <svg style="position:absolute;top:0;left:0;width:@(canvasWidth)px;height:@(canvasHeight)px;pointer-events:none;z-index:500;">
             <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="10" 
+                @* Blue arrow for normal connections *@
+                <marker id="arrowhead-blue" markerWidth="10" markerHeight="10"
                         refX="9" refY="3" orient="auto">
                     <polygon points="0 0, 10 3, 0 6" fill="#2196F3" />
                 </marker>
+                
+                @* Orange arrow for parent-to-subreport connections *@
+                <marker id="arrowhead-orange" markerWidth="10" markerHeight="10"
+                        refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#FF4D00" />
+                </marker>
+                
+                @* Black arrow for subreport-to-subreport connections *@
+                <marker id="arrowhead-black" markerWidth="10" markerHeight="10"
+                        refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#000000" />
+                </marker>
             </defs>
-            
+
             @foreach (var connection in connections)
             {
                 var fromNode = Nodes.FirstOrDefault(n => n.Id == connection.FromNodeId);
                 var toNode = Nodes.FirstOrDefault(n => n.Id == connection.ToNodeId);
-                
-                if (fromNode != null && toNode != null)
-                {
-                    // Dynamically determine connection points based on node positions
-                    var (startX, startY, endX, endY) = CalculateConnectionPoints(fromNode, toNode);
-                    
-                    // Position label at 25% from source node instead of middle
-                    var labelX = startX + (endX - startX) * 0.25;
-                    var labelY = startY + (endY - startY) * 0.25;
-                    
-                    var labelText = $"{connection.FromCode} → {connection.ToCode}";
-                    var labelWidth = labelText.Length * 8 + 10; // Approximate width
 
-                    @* Connection group *@
-                    <g>
-                        @* Dotted line with arrow *@
-                        <line x1="@startX" y1="@startY" x2="@endX" y2="@endY" 
-                              stroke="#2196F3" 
-                              stroke-width="2" 
-                              stroke-dasharray="5,5" 
-                              marker-end="url(#arrowhead)" />
+                if (fromNode is null || toNode is null)
+                    continue;
+
+                // Determine colors based on node types
+                string strokeColor;
+                string markerEnd;
+
+                if (!fromNode.IsSubReportItem && toNode.IsSubReportItem)
+                {
+                    // Parent → SubReport: Orange
+                    strokeColor = "#FF4D00";
+                    markerEnd = "url(#arrowhead-orange)";
+                }
+                else if (fromNode.IsSubReportItem && toNode.IsSubReportItem)
+                {
+                    // SubReport → SubReport: Black
+                    strokeColor = "#000000";
+                    markerEnd = "url(#arrowhead-black)";
+                }
+                else
+                {
+                    // Normal → Normal: Blue
+                    strokeColor = "#2196F3";
+                    markerEnd = "url(#arrowhead-blue)";
+                }
+
+                // Stable per-source ordering so offsets don't "shuffle"
+                var outgoing = connections
+                    .Where(c => c.FromNodeId == connection.FromNodeId)
+                    .OrderBy(c => c.ToNodeId)
+                    .ThenBy(c => c.FromCode)
+                    .ThenBy(c => c.ToCode)
+                    .ToList();
+
+                var i = outgoing.FindIndex(c =>
+                    c.FromNodeId == connection.FromNodeId &&
+                    c.ToNodeId == connection.ToNodeId &&
+                    c.FromCode == connection.FromCode &&
+                    c.ToCode == connection.ToCode);
+
+                if (i < 0) i = 0;
+
+                // Offsets: 0, +1, -1, +2, -2...  (use visible pixel step)
+                var step = 6.0;
+                int level = i == 0 ? 0 : (i + 1) / 2;
+                int sign = i == 0 ? 0 : (i % 2 == 1 ? +1 : -1);
+                var trackOffset = level * sign * step;  // FIXED: Deterministic offset instead of random
+
+                var inset = 6.0;
+                var margin = 30.0;
+
+                // Source port: right-middle for subreport connections, left-middle for others
+                var startX = (fromNode.IsSubReportItem || toNode.IsSubReportItem) 
+                    ? (fromNode.X + fromNode.Width) 
+                    : (fromNode.X);
+                var startY = fromNode.Y + fromNode.Height / 2.0 + trackOffset;
+
+                // Destination port: top-middle, inset into node
+                var endX = toNode.X + toNode.Width / 2.0;
+                var endY = toNode.Y + inset;
+
+                // Lanes: APPLY offset here so long shared segments don't overlap
+                var laneX = Math.Min(startX, endX) - margin;
+                var laneY = (toNode.Y - margin) + trackOffset;
+
+                // 3-bend path with a bend right before the arrow; last segment vertical => arrow points down
+                var d = $"M {startX} {startY} " +
+                        $"L {laneX} {startY} " +
+                        $"L {laneX} {laneY} " +
+                        $"L {endX} {laneY} " +
+                        $"L {endX} {endY}";
+
+                // Label on the top horizontal segment (clear + follows track)
+                var labelX = (laneX + endX) / 2.0;
+                var labelY = laneY - 14;
+
+                var labelText = $"{connection.FromCode} → {connection.ToCode}";
+                var labelWidth = labelText.Length * 8 + 10;
+
+                <g>
+                    <path d="@d"
+                          fill="none"
+                          stroke="@strokeColor"
+                          stroke-width="2"
+                          stroke-dasharray="5,5"
+                          marker-end="@markerEnd" />
+
+                    @* Interactive label group - enable pointer events for the entire group *@
+                    <g style="cursor:pointer;" 
+                       @ondblclick="@(() => RemoveSpecificConnection(connection))"
+                       @ondblclick:stopPropagation="true">
                         
-                        @* Label background (white box with border) - positioned at 25% from source *@
-                        <rect x="@(labelX - labelWidth/2)" y="@(labelY - 12)" 
-                              width="@labelWidth" height="24" 
+                        <rect x="@(labelX - labelWidth / 2)" y="@(labelY - 12)"
+                              width="@labelWidth" height="24"
                               fill="white" 
-                              stroke="#2196F3" 
+                              stroke="@strokeColor" 
                               stroke-width="1.5" 
                               rx="4" 
-                              ry="4" />
-                        
-                        @* Connection label text *@
-                        <text x="@labelX" 
-                              y="@(labelY + 5)" 
-                              text-anchor="middle" 
-                              dominant-baseline="middle"
+                              ry="4"
+                              style="pointer-events:all;" />
+
+                        <text x="@labelX" y="@(labelY + 5)"
+                              text-anchor="middle" dominant-baseline="middle"
                               font-family="Arial, sans-serif"
                               font-size="13"
                               font-weight="700"
-                              fill="#2196F3"
-                              style="pointer-events:none;">
+                              fill="@strokeColor"
+                              style="pointer-events:all;">
                             @labelText
                         </text>
+                        
+                        @* Optional: Add a visual hint (e.g., close icon) on hover *@
+                        <circle cx="@(labelX + labelWidth/2 - 8)" 
+                                cy="@(labelY)" 
+                                r="6" 
+                                fill="@strokeColor" 
+                                opacity="0.8"
+                                style="pointer-events:all;" />
+                        
+                        <text x="@(labelX + labelWidth/2 - 8)" 
+                              y="@(labelY + 1)" 
+                              text-anchor="middle" 
+                              dominant-baseline="middle"
+                              font-family="Arial, sans-serif"
+                              font-size="10"
+                              font-weight="bold"
+                              fill="white"
+                              style="pointer-events:none;">
+                            ×
+                        </text>
                     </g>
-                }
+                </g>
             }
         </svg>
 
@@ -95,7 +196,8 @@
                                  IsLinkingMode="@(isLinkingMode && linkingFromNode == node)"
                                  OnRemoveConnections="RemoveConnection"
                                  OnNodeDuplicated="HandleNodeDuplication"
-                                 OnNodeDeleted="HandleNodeDeletion"/>
+                                 OnNodeDeleted="HandleNodeDeletion" 
+                                 OnAddSubReportItemClicked="HandleAddSubReportItemClicked"/>
             </div>
         }
 
@@ -111,5 +213,5 @@
 </div>
 
 @code {
-   
+
 }

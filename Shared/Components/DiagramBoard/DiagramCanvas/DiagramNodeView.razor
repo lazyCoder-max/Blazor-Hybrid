@@ -13,6 +13,13 @@
             <MudTooltip Text="Duplicate" Placement="Placement.Top" Arrow="true">
                 <MudIconButton Icon="@duplicateIcon" Size="Size.Small" OnClick="OnDuplicateButtonClicked" />
             </MudTooltip>
+            @if(!Node.IsSubReportItem)
+            {
+                <MudTooltip Text="Add sub-report item" Placement="Placement.Top" Arrow="true">
+                    <MudIconButton Icon="@subReportIcon" Size="Size.Small" OnClick="OnSubReportItemClicked" />
+                </MudTooltip>
+            }
+            
             <MudTooltip Text="@(linkButtonTooltip)" Placement="Placement.Top" Arrow="true">
                 <MudIconButton Icon="@(linkButtonIcon)" Size="Size.Small" OnClick="OnLinkButtonClicked" />
             </MudTooltip>
@@ -20,7 +27,7 @@
     }
 
     <div style="@($"border-radius:10px;border-style:solid;border-color:{(IsSelected ? "#2196F3" : "transparent")};border-width:{(IsSelected ? "2px" : "0px")};padding:{(IsSelected ? "2px" : "0px")};transition:all 0.2s ease;{(IsSelected ? "box-shadow: 0 4px 20px rgba(33, 150, 243, 0.4);" : "")}")">
-        <MudCard Elevation="3" @onclick="HandleClick" Style="@($"width:100%;cursor:move;background-color:#FFFFFF;border-radius:10px;border-color:skyblue;border-top-width:3px;border-bottom-width:9px;border-left-width:3px;border-right-width:3px;")">
+        <MudCard Elevation="3" @onclick="HandleClick" Style="@($"width:100%;cursor:move;background-color:#FFFFFF;border-radius:10px;border-color:{(Node.IsSubReportItem ? "##94A3B8" : "skyblue")};border-top-width:3px;border-bottom-width:9px;border-left-width:3px;border-right-width:3px;")">
             <MudCardHeader>
                 <CardHeaderContent>
                     <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@Node.Item.ReportItemShort</MudText>
